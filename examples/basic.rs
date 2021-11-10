@@ -1,7 +1,13 @@
 use containerd;
-use tonic::{metadata::MetadataValue, transport::Channel, Request};
+use tokio::net::UnixStream;
+use tonic::{
+    metadata::MetadataValue,
+    transport::{Channel, Endpoint, Uri},
+    Request,
+};
+use tower::service_fn;
 
-const ENDPOINT: &str = "http://192.168.1.143:15432";
+const ENDPOINT: &str = "/run/containerd/containerd.sock";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -12,7 +18,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let header_value = MetadataValue::from_str(&ns)?;
 
-    let channel = Channel::from_static(ENDPOINT).connect().await?;
+    let channel = Endpoint::try_from("http://[::]:50051")?
+        .connect_with_connector(service_fn(|_: Uri| {
+            // Connect to a Uds socket
+            UnixStream::connect(ENDPOINT)
+        }))
+        .await?;
+
+    // let channel = Channel::from_static(ENDPOINT).connect().await?;
     let mut service =
         containerd::api::services::leases::v1::leases_client::LeasesClient::with_interceptor(
             channel,
