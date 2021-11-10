@@ -2,7 +2,7 @@ use containerd;
 use tokio::net::UnixStream;
 use tonic::{
     metadata::MetadataValue,
-    transport::{Channel, Endpoint, Uri},
+    transport::{Endpoint, Uri},
     Request,
 };
 use tower::service_fn;
